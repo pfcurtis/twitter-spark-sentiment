@@ -46,6 +46,7 @@ except ConfigParser.NoSectionError as e:
 @rest_app.route('/query/<q_str>')
 def change_twitter_query(q_str):
     global p2
+    global query_string
     query_string = q_str
     p2.terminate()
     p2 = Process(target=run_tweet_capture, args=(query_string,))
@@ -55,6 +56,7 @@ def change_twitter_query(q_str):
 
 @rest_app.route('/query')
 def return_twitter_query():
+    global query_string
     return jsonify(query=query_string)
 
 
@@ -207,21 +209,20 @@ if __name__ == '__main__':
             print "Query required."
             sys.exit(1)
 
+# Process variables
+        global p1
+        global query_string
+
+        print("Starting ....")
         query_string = options.query
         tweetQueue = Queue()
 
-# Process variables
-        global p1
-        global p2
-
-        print("Starting ....")
-
         p1 = Process(target=run_tweet_server)
-        print("Starting Tweets ....")
+        print("Starting Tweet Server ....")
         p1.start()
 
         p2 = Process(target=run_tweet_capture, args=(query_string,))
-        print("Starting Capture ....")
+        print("Starting Tweet Capture ....")
         p2.start()
 
         rest_app.run(host='0.0.0.0', port=8088)
