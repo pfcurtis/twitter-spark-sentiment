@@ -47,7 +47,7 @@ class TweetSaver(object):
         <save_dir>/YYYY/MM/DD/HH/tweets.json
         based on the created_at field in the tweet.
     """
-    def __init__(self, save_dir=".../data"):
+    def __init__(self, save_dir="."):
         self._saveDir = None
         self.saveDir = save_dir
         self._tweetCounter = 0
@@ -91,8 +91,8 @@ class TweetSaver(object):
                 f.write(tweet)
                 self._tweetCounter += 1
                 # logger.info("Saved %d tweets." % self._tweetCounter)
-                sys.stdout.write("\rSaved %d tweets." % self._tweetCounter)
-                sys.stdout.flush()
+                # sys.stdout.write("\rSaved %d tweets." % self._tweetCounter)
+                # sys.stdout.flush()
                 f.close()
 
 
@@ -144,6 +144,12 @@ def run_server():
     server = ThreadedTCPServer(('0.0.0.0',1520), service)
     server.serve_forever()
 
+def run_tweet_capture(query_string):
+    query = [x.strip() for x in query_string.split(',')]
+    print("Listening for tweets containing: %s" % ', '.join(query))
+    stream = Stream(auth, l)
+    stream.filter(track=query)
+   
 
 def parseOptions():
     parser = OptionParser()
@@ -165,7 +171,7 @@ def parseOptions():
 if __name__ == '__main__':
     try:
         (options, args) = parseOptions()
-        tweet_saver = TweetSaver(save_dir=options.directory)
+        tweet_saver = TweetSaver(save_dir="../data")
 
         if config.has_section('Proxy'):
             api = API(proxy=config.get('Proxy', 'https_proxy'))
@@ -186,11 +192,11 @@ if __name__ == '__main__':
         p1 = Process(target=run_server)
         p1.start()
 
+        query_string = "New York"
+        p2 = Process(target=run_tweet_capture, args=(query_string,))
+        p2.start()
 
-        query = [x.strip() for x in options.query.split(',')]
-        print("Listening for tweets containing: %s" % ', '.join(query))
-        stream = Stream(auth, l)
-        stream.filter(track=query)
+
 
     except DirNotFoundException, e:
         logger.warn(e)
