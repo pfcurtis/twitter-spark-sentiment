@@ -117,9 +117,32 @@ class SaveTweetsListener(StreamListener):
         """
         super(SaveTweetsListener, self).on_data(raw_data)
         self._tweet_saver.saveTweet(raw_data)
+        tweetQueue.put(raw_data)
 
     def on_error(self, status):
         logger.warn(status)
+
+
+class service(SocketServer.BaseRequestHandler):
+    def handle(self):
+        data = 'dummy'
+        print "Client connected with ", self.client_address
+        while True:
+            data = tweetQueue.get()
+            try:
+                self.request.send(data)
+            except:
+                print "Client exited"
+                self.request.close()
+                break
+
+
+class ThreadedTCPServer(SocketServer.ThreadingMixIn, SocketServer.TCPServer):
+    pass
+
+def run_server():
+    server = ThreadedTCPServer(('0.0.0.0',1520), service)
+    server.serve_forever()
 
 
 def parseOptions():
@@ -159,6 +182,9 @@ if __name__ == '__main__':
             sys.exit(1)
 
         tweetQueue = Queue()
+
+        p1 = Process(target=run_server)
+        p1.start()
 
 
         query = [x.strip() for x in options.query.split(',')]
