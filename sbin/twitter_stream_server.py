@@ -17,6 +17,10 @@ from HTMLParser import HTMLParser
 import errno
 from datetime import datetime
 import ConfigParser
+from flask import Flask
+
+
+rest_app = Flask(__name__)
 
 this_dir = os.path.abspath(os.path.dirname(__file__))
 
@@ -36,6 +40,20 @@ try:
 except ConfigParser.NoSectionError as e:
         logger.warn(e)
         sys.exit(1)
+
+
+
+@rest_app.route('/query/<q_str>')
+def change_twitter_query(q_str):
+    query_string = q_str
+    p2.terminate()
+    p2 = Process(target=run_tweet_capture, args=(query_string,))
+    p2.start()
+
+
+@rest_app.route('/query')
+def return_twitter_query():
+    return query_string
 
 
 class DirNotFoundException(Exception): pass
@@ -140,7 +158,8 @@ class service(SocketServer.BaseRequestHandler):
 class ThreadedTCPServer(SocketServer.ThreadingMixIn, SocketServer.TCPServer):
     pass
 
-def run_server():
+def run_tweet_server():
+    print "Tweet Server started"
     server = ThreadedTCPServer(('0.0.0.0',1520), service)
     server.serve_forever()
 
@@ -149,7 +168,6 @@ def run_tweet_capture(query_string):
     print("Listening for tweets containing: %s" % ', '.join(query))
     stream = Stream(auth, l)
     stream.filter(track=query)
-   
 
 def parseOptions():
     parser = OptionParser()
@@ -187,16 +205,24 @@ if __name__ == '__main__':
             print "Query required."
             sys.exit(1)
 
+        query_string = options.query
         tweetQueue = Queue()
 
-        p1 = Process(target=run_server)
+# Process variables
+        global p1
+        global p2
+
+        print("Starting ....")
+
+        p1 = Process(target=run_tweet_server)
+        print("Starting Tweets ....")
         p1.start()
 
-        query_string = "New York"
         p2 = Process(target=run_tweet_capture, args=(query_string,))
+        print("Starting Capture ....")
         p2.start()
 
-
+        rest_app.run(host='0.0.0.0', port=8088)
 
     except DirNotFoundException, e:
         logger.warn(e)
@@ -206,5 +232,5 @@ if __name__ == '__main__':
         logger.warn("Keyboard interrupt... exiting.")
         sys.exit(1)
 
-    except Exception:
-        raise
+#   except Exception:
+#       raise
