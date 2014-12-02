@@ -47,7 +47,7 @@ class TweetSaver(object):
         <save_dir>/YYYY/MM/DD/HH/tweets.json
         based on the created_at field in the tweet.
     """
-    def __init__(self, save_dir="."):
+    def __init__(self, save_dir=".../data"):
         self._saveDir = None
         self.saveDir = save_dir
         self._tweetCounter = 0
