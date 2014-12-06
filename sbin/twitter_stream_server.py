@@ -17,7 +17,7 @@ from HTMLParser import HTMLParser
 import errno
 from datetime import datetime
 import ConfigParser
-from flask import Flask,jsonify
+from flask import Flask,jsonify,url_for,redirect
 
 
 rest_app = Flask(__name__)
@@ -41,7 +41,9 @@ except ConfigParser.NoSectionError as e:
         logger.warn(e)
         sys.exit(1)
 
-
+@rest_app.route('/')
+def index_page():
+    return redirect('/static/index.html', code=302)
 
 @rest_app.route('/query/<q_str>')
 def change_twitter_query(q_str):
@@ -225,7 +227,10 @@ if __name__ == '__main__':
         print("Starting Tweet Capture ....")
         p2.start()
 
+       
         rest_app.run(host='0.0.0.0', port=8088)
+        p1.join()
+        p2.join()
 
     except DirNotFoundException, e:
         logger.warn(e)
